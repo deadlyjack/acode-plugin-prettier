@@ -1,0 +1,15 @@
+{
+  "id": "acode.plugin.prettier",
+  "name": "Prettier",
+  "main": "dist/main.js",
+  "version": "1.0.0",
+  "readme": "README.md",
+  "icon": "icon.png",
+  "type": "free",
+  "files": [],
+  "author": {
+    "name": "Ajit Kumar",
+    "email": "me@ajitkumar.dev",
+    "github": "deadlyjack"
+  }
+}
