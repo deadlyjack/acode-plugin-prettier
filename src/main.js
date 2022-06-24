@@ -98,6 +98,7 @@ if (window.acode) {
     prettier.destroy();
     console.log('Python plugin unmounted');
   });
-  const extensions = ['js', 'jsx', 'ts', 'tsx', 'html', 'css', 'scss', 'less', 'json', 'yml', 'yaml', 'xml', 'vue', 'hbs', 'ejs', 'md'];
+  const extensions = ['js', 'jsx', 'ts', 'tsx', 'css', 'scss', 'less', 'json', 'yml', 'yaml', 'xml', 'md'];
+  // const extensions = ['js', 'jsx', 'ts', 'tsx', 'html', 'css', 'scss', 'less', 'json', 'yml', 'yaml', 'xml', 'vue', 'hbs', 'ejs', 'md'];
   acode.registerFormatter(pluginId, extensions, prettier.run.bind(prettier));
 }
