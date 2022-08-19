@@ -1,104 +1,172 @@
-import prettier from 'prettier/standalone';
-import prettierParserBabel from 'prettier/parser-babel';
-import prettierParserGraphql from 'prettier/parser-graphql';
-import prettierParserAngular from 'prettier/parser-angular';
-import prettierParserAspree from 'prettier/parser-espree';
-import prettierParserFlow from 'prettier/parser-flow';
-import prettierParserGlimmer from 'prettier/parser-glimmer';
-import prettierParserHtml from 'prettier/parser-html';
-import prettierParserMd from 'prettier/parser-markdown';
-import prettierParserMeriyah from 'prettier/parser-meriyah';
-import prettierParserPostcss from 'prettier/parser-postcss';
-import prettierParserTypescript from 'prettier/parser-typescript';
-import prettierParserYaml from 'prettier/parser-yaml';
+import prettier from "prettier/standalone";
+import pretterParserHTML from "prettier/parser-html";
+import prettierParserBabel from "prettier/parser-babel";
+import prettierParserGraphql from "prettier/parser-graphql";
+import prettierParserAngular from "prettier/parser-angular";
+import prettierParserAspree from "prettier/parser-espree";
+import prettierParserFlow from "prettier/parser-flow";
+import prettierParserGlimmer from "prettier/parser-glimmer";
+import prettierParserMd from "prettier/parser-markdown";
+import prettierParserMeriyah from "prettier/parser-meriyah";
+import prettierParserPostcss from "prettier/parser-postcss";
+import prettierParserTypescript from "prettier/parser-typescript";
+import prettierParserYaml from "prettier/parser-yaml";
 
-const pluginId = 'acode.plugin.prettier';
-const poluginList = [
-  prettierParserBabel,
-  prettierParserGraphql,
-  prettierParserAngular,
-  prettierParserAspree,
-  prettierParserFlow,
-  prettierParserGlimmer,
-  prettierParserHtml,
-  prettierParserMd,
-  prettierParserMeriyah,
-  prettierParserPostcss,
-  prettierParserTypescript,
-  prettierParserYaml,
+const plugins = [
+    prettierParserBabel,
+    prettierParserGraphql,
+    prettierParserAngular,
+    prettierParserAspree,
+    prettierParserFlow,
+    prettierParserGlimmer,
+    pretterParserHTML,
+    prettierParserMd,
+    prettierParserMeriyah,
+    prettierParserPostcss,
+    prettierParserTypescript,
+    prettierParserYaml,
 ];
 
+const pluginId = "acode.plugin.prettier";
+
 class Prettier {
+    static inferParser(filename) {
+        switch (filename.slice(filename.lastIndexOf(".") + 1)) {
+            case "html":
+            case "htm":
+                return "html";
 
-  async init() {
-    const config = appSettings.value[pluginId];
-  }
+            case "css":
+                return "css";
 
-  async run() {
-    const { editor, activeFile } = editorManager;
-    const code = editor.getValue();
-    const cursorPos = editor.getCursorPosition();
-    const res = prettier.formatWithCursor(code, {
-      cursorOffset: this.#cursorPosTocursorOffset(cursorPos),
-      filepath: activeFile.name,
-      plugins: poluginList,
-    });
-    editor.setValue(res.formatted);
-    const { row, column } = this.#cursorOffsetTocursorPos(res.cursorOffset);
-    setTimeout(() => {
-      editor.gotoLine(row + 1, column - 1);
-    }, 100);
-  }
+            case "scss":
+                return "scss";
 
-  destroy() {
+            case "less":
+                return "less";
 
-  }
+            case "js":
+            case "cjs":
+            case "es":
+            case "mjs":
+            case "jsx":
+                return "babel";
 
-  #cursorPosTocursorOffset(cursorPos) {
-    let { row, column } = cursorPos;
-    const { editor } = editorManager;
-    const lines = editor.getValue().split('\n');
-    for (let i = 0; i < row - 1; i++) {
-      column += lines[i].length;
+            case "ts":
+            case "tsx":
+                return "typescript";
+
+            case "vue":
+                return "vue";
+
+            case "json":
+                return "json";
+
+            case "hbs":
+            case "handlebars":
+                return "glimmer";
+
+            case "md":
+                return "markdown";
+
+            case "yaml":
+            case "yml":
+                return "yaml";
+
+            default:
+                return null;
+        }
     }
-    return column;
-  }
 
-  #cursorOffsetTocursorPos(cursorOffset) {
-    const { editor } = editorManager;
-    const lines = editor.getValue().split('\n');
-    let row = 0;
-    let column = 0;
-    for (let i = 0; i < lines.length; i++) {
-      if (column + lines[i].length >= cursorOffset) {
-        row = i;
-        column = cursorOffset - column;
-        break;
-      }
-      column += lines[i].length;
+    async init() {
+        const config = appSettings.value[pluginId];
     }
-    return {
-      row,
-      column,
-    };
-  }
+
+    async run() {
+        const { editor, activeFile } = editorManager;
+        const code = editor.getValue();
+        const cursorPos = editor.getCursorPosition();
+        const parser = Prettier.inferParser(activeFile.name);
+        console.log("biraj's parser is", parser);
+        const res = prettier.formatWithCursor(code, {
+            parser,
+            cursorOffset: this.#cursorPosTocursorOffset(cursorPos),
+            filepath: activeFile.name,
+            plugins,
+        });
+        editor.setValue(res.formatted);
+        const { row, column } = this.#cursorOffsetTocursorPos(res.cursorOffset);
+        setTimeout(() => {
+            editor.gotoLine(row + 1, column - 1);
+        }, 100);
+    }
+
+    destroy() {}
+
+    #cursorPosTocursorOffset(cursorPos) {
+        let { row, column } = cursorPos;
+        const { editor } = editorManager;
+        const lines = editor.getValue().split("\n");
+        for (let i = 0; i < row - 1; i++) {
+            column += lines[i].length;
+        }
+        return column;
+    }
+
+    #cursorOffsetTocursorPos(cursorOffset) {
+        const { editor } = editorManager;
+        const lines = editor.getValue().split("\n");
+        let row = 0;
+        let column = 0;
+        for (let i = 0; i < lines.length; i++) {
+            if (column + lines[i].length >= cursorOffset) {
+                row = i;
+                column = cursorOffset - column;
+                break;
+            }
+            column += lines[i].length;
+        }
+        return {
+            row,
+            column,
+        };
+    }
 }
 
 if (window.acode) {
-  const prettier = new Prettier();
-  acode.setPluginInit(pluginId, (baseUrl, $page, { cacheFileUrl, cacheFile }) => {
-    if (!baseUrl.endsWith('/')) {
-      baseUrl += '/';
-    }
-    prettier.baseUrl = baseUrl;
-    prettier.init($page, cacheFile, cacheFileUrl);
-    console.log('Python plugin initialized');
-  });
-  acode.setPluginUnmount(pluginId, () => {
-    prettier.destroy();
-    console.log('Python plugin unmounted');
-  });
-  const extensions = ['js', 'jsx', 'ts', 'tsx', 'css', 'scss', 'less', 'json', 'yml', 'yaml', 'xml', 'md'];
-  // const extensions = ['js', 'jsx', 'ts', 'tsx', 'html', 'css', 'scss', 'less', 'json', 'yml', 'yaml', 'xml', 'vue', 'hbs', 'ejs', 'md'];
-  acode.registerFormatter(pluginId, extensions, prettier.run.bind(prettier));
+    const prettier = new Prettier();
+    acode.setPluginInit(pluginId, (baseUrl, $page, { cacheFileUrl, cacheFile }) => {
+        if (!baseUrl.endsWith("/")) {
+            baseUrl += "/";
+        }
+        prettier.baseUrl = baseUrl;
+        prettier.init($page, cacheFile, cacheFileUrl);
+    });
+    acode.setPluginUnmount(pluginId, () => {
+        prettier.destroy();
+    });
+
+    const extensions = [
+        "html",
+        "htm",
+        "css",
+        "scss",
+        "less",
+        "js",
+        "cjs",
+        "es",
+        "mjs",
+        "jsx",
+        "ts",
+        "tsx",
+        "vue",
+        "json",
+        "hbs",
+        "handlebars",
+        "md",
+        "yaml",
+        "yml",
+    ];
+
+    acode.registerFormatter(pluginId, extensions, prettier.run.bind(prettier));
 }

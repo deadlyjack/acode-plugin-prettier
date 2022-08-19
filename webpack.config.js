@@ -1,63 +1,34 @@
-const path = require('path');
-const fs = require('fs');
-const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+const path = require("path");
 
 module.exports = (env, options) => {
-  const { mode = 'development' } = options;
-  const rules = [
-    {
-      test: /\.hbs$/,
-      use: ['raw-loader'],
-    },
-    {
-      test: /\.m?js$/,
-      use: {
-        loader: 'babel-loader',
-        options: {
-          presets: ['@babel/preset-env'],
-        },
-      },
-    },
-    {
-      test: /\.(sa|sc|c)ss$/,
-      use: [
+    const { mode = "development" } = options;
+    const rules = [
         {
-          loader: MiniCssExtractPlugin.loader,
-          options: {
-            publicPath: '../../',
-          },
+            test: /\.m?js$/,
+            exclude: /node_modules/,
+            use: {
+                loader: "babel-loader",
+                options: {
+                    presets: ["@babel/preset-env"],
+                },
+            },
         },
-        {
-          loader: 'css-loader',
-          options: {
-            url: false,
-          },
+    ];
+
+    const main = {
+        mode,
+        entry: {
+            main: "./src/main.js",
         },
-        'postcss-loader',
-        'sass-loader',
-      ],
-    }
-  ];
+        output: {
+            path: path.resolve(__dirname, "dist"),
+            filename: "[name].js",
+            chunkFilename: "[name].js",
+        },
+        module: {
+            rules,
+        },
+    };
 
-  const main = {
-    mode,
-    entry: {
-      main: './src/main.js',
-    },
-    output: {
-      path: path.resolve(__dirname, 'dist'),
-      filename: '[name].js',
-      chunkFilename: '[name].js',
-    },
-    module: {
-      rules,
-    },
-    plugins: [
-      new MiniCssExtractPlugin({
-        filename: '[name].css',
-      }),
-    ],
-  };
-
-  return [main];
-}
+    return [main];
+};
