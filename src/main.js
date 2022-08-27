@@ -87,7 +87,6 @@ class Prettier {
         const code = editor.getValue();
         const cursorPos = editor.getCursorPosition();
         const parser = Prettier.inferParser(activeFile.name);
-        console.log("biraj's parser is", parser);
         const res = prettier.formatWithCursor(code, {
             parser,
             cursorOffset: this.#cursorPosTocursorOffset(cursorPos),

@@ -5,7 +5,6 @@ module.exports = (env, options) => {
     const rules = [
         {
             test: /\.m?js$/,
-            exclude: /node_modules/,
             use: {
                 loader: "babel-loader",
                 options: {
