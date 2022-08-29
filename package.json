@@ -20,6 +20,9 @@
   "scripts": {
     "build": "webpack"
   },
+  "resolutions": {
+    "terser": "^5.14.2"
+  },
   "browserslist": [
     "> 0.25%, not dead"
   ]
