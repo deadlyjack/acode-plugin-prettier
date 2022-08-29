@@ -11,6 +11,7 @@ import prettierParserMeriyah from "prettier/parser-meriyah";
 import prettierParserPostcss from "prettier/parser-postcss";
 import prettierParserTypescript from "prettier/parser-typescript";
 import prettierParserYaml from "prettier/parser-yaml";
+import plugin from '../plugin.json';
 
 const plugins = [
     prettierParserBabel,
@@ -27,9 +28,12 @@ const plugins = [
     prettierParserYaml,
 ];
 
-const pluginId = "acode.plugin.prettier";
+const pluginId = plugin.id;
 
 class Prettier {
+    constructor() {
+        this.run = this.run.bind(this);
+    }
     static inferParser(filename) {
         switch (filename.slice(filename.lastIndexOf(".") + 1)) {
             case "html":
@@ -80,6 +84,29 @@ class Prettier {
 
     async init() {
         const config = appSettings.value[pluginId];
+        const extensions = [
+            "html",
+            "htm",
+            "css",
+            "scss",
+            "less",
+            "js",
+            "cjs",
+            "es",
+            "mjs",
+            "jsx",
+            "ts",
+            "tsx",
+            "vue",
+            "json",
+            "hbs",
+            "handlebars",
+            "md",
+            "yaml",
+            "yml",
+        ];
+
+        acode.registerFormatter(pluginId, extensions, this.run);
     }
 
     async run() {
@@ -87,7 +114,6 @@ class Prettier {
         const code = editor.getValue();
         const cursorPos = editor.getCursorPosition();
         const parser = Prettier.inferParser(activeFile.name);
-        console.log("biraj's parser is", parser);
         const res = prettier.formatWithCursor(code, {
             parser,
             cursorOffset: this.#cursorPosTocursorOffset(cursorPos),
@@ -96,12 +122,12 @@ class Prettier {
         });
         editor.setValue(res.formatted);
         const { row, column } = this.#cursorOffsetTocursorPos(res.cursorOffset);
-        setTimeout(() => {
-            editor.gotoLine(row + 1, column - 1);
-        }, 100);
+        editor.gotoLine(row + 1, column - 1);
     }
 
-    destroy() {}
+    destroy() {
+        acode.unregisterFormatter(plugin.id);
+    }
 
     #cursorPosTocursorOffset(cursorPos) {
         let { row, column } = cursorPos;
@@ -145,28 +171,4 @@ if (window.acode) {
     acode.setPluginUnmount(pluginId, () => {
         prettier.destroy();
     });
-
-    const extensions = [
-        "html",
-        "htm",
-        "css",
-        "scss",
-        "less",
-        "js",
-        "cjs",
-        "es",
-        "mjs",
-        "jsx",
-        "ts",
-        "tsx",
-        "vue",
-        "json",
-        "hbs",
-        "handlebars",
-        "md",
-        "yaml",
-        "yml",
-    ];
-
-    acode.registerFormatter(pluginId, extensions, prettier.run.bind(prettier));
 }
