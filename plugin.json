@@ -6,7 +6,7 @@
   "readme": "readme.md",
   "icon": "icon.png",
   "type": "free",
-  "files": [],
+  "files": ["src_worker_js.js", "vendor.js"],
   "author": {
     "name": "Ajit Kumar",
     "email": "me@ajitkumar.dev",

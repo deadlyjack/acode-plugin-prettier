@@ -1,39 +1,29 @@
-import prettier from "prettier/standalone";
-import pretterParserHTML from "prettier/parser-html";
-import prettierParserBabel from "prettier/parser-babel";
-import prettierParserGraphql from "prettier/parser-graphql";
-import prettierParserAngular from "prettier/parser-angular";
-import prettierParserAspree from "prettier/parser-espree";
-import prettierParserFlow from "prettier/parser-flow";
-import prettierParserGlimmer from "prettier/parser-glimmer";
-import prettierParserMd from "prettier/parser-markdown";
-import prettierParserMeriyah from "prettier/parser-meriyah";
-import prettierParserPostcss from "prettier/parser-postcss";
-import prettierParserTypescript from "prettier/parser-typescript";
-import prettierParserYaml from "prettier/parser-yaml";
-import plugin from '../plugin.json';
-
-const plugins = [
-    prettierParserBabel,
-    prettierParserGraphql,
-    prettierParserAngular,
-    prettierParserAspree,
-    prettierParserFlow,
-    prettierParserGlimmer,
-    pretterParserHTML,
-    prettierParserMd,
-    prettierParserMeriyah,
-    prettierParserPostcss,
-    prettierParserTypescript,
-    prettierParserYaml,
-];
+import plugin from "../plugin.json";
 
 const pluginId = plugin.id;
 
-class Prettier {
+class AcodePrettier {
+    worker = null;
+    workerInitialized = false;
+
     constructor() {
         this.run = this.run.bind(this);
     }
+
+    async loadScript() {
+        if (document.getElementById("prettier-vendor-script")) {
+            return;
+        }
+
+        const $script = document.createElement("script");
+        $script.id = "prettier-vendor-script";
+        $script.src = acode.joinUrl(this.baseUrl, "vendor.js");
+        return new Promise((resolve, reject) => {
+            $script.onload = resolve;
+            $script.onerror = reject;
+        });
+    }
+
     static inferParser(filename) {
         switch (filename.slice(filename.lastIndexOf(".") + 1)) {
             case "html":
@@ -83,6 +73,12 @@ class Prettier {
     }
 
     async init() {
+        if (typeof Worker !== undefined) {
+            this.#initializeWorker();
+        } else {
+            await this.loadScript();
+        }
+
         const config = appSettings.value[pluginId];
         const extensions = [
             "html",
@@ -113,16 +109,33 @@ class Prettier {
         const { editor, activeFile } = editorManager;
         const code = editor.getValue();
         const cursorPos = editor.getCursorPosition();
-        const parser = Prettier.inferParser(activeFile.name);
-        const res = prettier.formatWithCursor(code, {
-            parser,
-            cursorOffset: this.#cursorPosTocursorOffset(cursorPos),
-            filepath: activeFile.name,
-            plugins,
+        const parser = AcodePrettier.inferParser(activeFile.name);
+
+        if (typeof Worker === undefined) {
+            const { prettier, plugins } = window.acodePluginPrettier;
+            const res = prettier.formatWithCursor(code, {
+                parser,
+                cursorOffset: this.#cursorPosTocursorOffset(cursorPos),
+                filepath: activeFile.name,
+                plugins,
+            });
+            editor.setValue(res.formatted);
+            const { row, column } = this.#cursorOffsetTocursorPos(
+                res.cursorOffset
+            );
+            editor.gotoLine(row + 1, column - 1);
+            return;
+        }
+
+        this.worker.postMessage({
+            id: activeFile.id,
+            code,
+            cursorOptions: {
+                parser,
+                cursorOffset: this.#cursorPosTocursorOffset(cursorPos),
+                filepath: activeFile.name,
+            },
         });
-        editor.setValue(res.formatted);
-        const { row, column } = this.#cursorOffsetTocursorPos(res.cursorOffset);
-        editor.gotoLine(row + 1, column - 1);
     }
 
     destroy() {
@@ -157,17 +170,49 @@ class Prettier {
             column,
         };
     }
+
+    #initializeWorker() {
+        this.worker = new Worker(new URL("./worker.js", import.meta.url));
+        this.worker.onmessage = (e) => {
+            const { id, res, action } = e.data;
+            if (action === "script loaded") {
+                this.workerInitialized = true;
+                return;
+            }
+
+            if (action === "code format") {
+                const file = editorManager.getFile(id, "id");
+                if (!file) return;
+
+                const { session } = file;
+                session.setValue(res.formatted);
+                const { row, column } = this.#cursorOffsetTocursorPos(
+                    res.cursorOffset
+                );
+
+                session.selection.moveCursorTo(row, column);
+            }
+        };
+
+        this.worker.postMessage({
+            action: "load script",
+            scriptUrl: acode.joinUrl(this.baseUrl, "vendor.js"),
+        });
+    }
 }
 
 if (window.acode) {
-    const prettier = new Prettier();
-    acode.setPluginInit(pluginId, (baseUrl, $page, { cacheFileUrl, cacheFile }) => {
-        if (!baseUrl.endsWith("/")) {
-            baseUrl += "/";
+    const prettier = new AcodePrettier();
+    acode.setPluginInit(
+        pluginId,
+        (baseUrl, $page, { cacheFileUrl, cacheFile }) => {
+            if (!baseUrl.endsWith("/")) {
+                baseUrl += "/";
+            }
+            prettier.baseUrl = baseUrl;
+            prettier.init($page, cacheFile, cacheFileUrl);
         }
-        prettier.baseUrl = baseUrl;
-        prettier.init($page, cacheFile, cacheFileUrl);
-    });
+    );
     acode.setPluginUnmount(pluginId, () => {
         prettier.destroy();
     });
