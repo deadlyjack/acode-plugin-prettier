@@ -1,5 +1,5 @@
 import prettier from "prettier/standalone";
-import pretterParserHTML from "prettier/parser-html";
+import pretterParserHTML from "prettier/parser-html/";
 import prettierParserBabel from "prettier/parser-babel";
 import prettierParserGraphql from "prettier/parser-graphql";
 import prettierParserAngular from "prettier/parser-angular";

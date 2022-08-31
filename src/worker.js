@@ -2,7 +2,6 @@ self.onmessage = (e) => {
     const { id, code, cursorOptions, action, scriptUrl } = e.data;
     if (action === "load script") {
         importScripts(scriptUrl);
-        console.log(self.acodePluginPrettier);
         self.postMessage({ action: "script loaded" });
         return;
     }

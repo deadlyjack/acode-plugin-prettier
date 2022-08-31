@@ -1,0 +1,1 @@
+self.onmessage=function(r){var s=r.data,t=s.id,e=s.code,i=s.cursorOptions,o=s.action,a=s.scriptUrl;if("load script"===o)return importScripts(a),void self.postMessage({action:"script loaded"});var c=self.acodePluginPrettier,n=c.prettier,p=c.plugins;i.plugins=p;var d=n.formatWithCursor(e,i);self.postMessage({id:t,action:"code format",res:d})};

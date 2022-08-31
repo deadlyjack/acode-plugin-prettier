@@ -18,7 +18,7 @@
     "webpack-cli": "^4.10.0"
   },
   "scripts": {
-    "build": "webpack"
+    "build": "node ./scripts/build.js"
   },
   "resolutions": {
     "terser": ">=5.14.2"

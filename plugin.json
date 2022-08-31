@@ -2,11 +2,14 @@
   "id": "acode.plugin.prettier",
   "name": "Prettier",
   "main": "dist/main.js",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "readme": "readme.md",
   "icon": "icon.png",
   "type": "free",
-  "files": ["src_worker_js.js", "vendor.js"],
+  "files": [
+    "744.js",
+    "vendor.js"
+  ],
   "author": {
     "name": "Ajit Kumar",
     "email": "me@ajitkumar.dev",
