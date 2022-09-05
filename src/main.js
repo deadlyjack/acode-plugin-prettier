@@ -73,7 +73,7 @@ class AcodePrettier {
     }
 
     async init() {
-        if (typeof Worker !== undefined) {
+        if (typeof Worker !== "undefined") {
             this.#initializeWorker();
         } else {
             await this.loadScript();
@@ -110,32 +110,28 @@ class AcodePrettier {
         const code = editor.getValue();
         const cursorPos = editor.getCursorPosition();
         const parser = AcodePrettier.inferParser(activeFile.name);
+        const cursorOptions = {
+            parser,
+            cursorOffset: this.#cursorPosTocursorOffset(cursorPos),
+            filepath: activeFile.name,
+            tabWidth: appSettings.value.tabSize,
+        };
 
-        if (typeof Worker === undefined) {
-            const { prettier, plugins } = window.acodePluginPrettier;
-            const res = prettier.formatWithCursor(code, {
-                parser,
-                cursorOffset: this.#cursorPosTocursorOffset(cursorPos),
-                filepath: activeFile.name,
-                plugins,
+        if (typeof Worker !== "undefined") {
+            this.worker.postMessage({
+                id: activeFile.id,
+                code,
+                cursorOptions,
             });
-            editor.setValue(res.formatted);
-            const { row, column } = this.#cursorOffsetTocursorPos(
-                res.cursorOffset
-            );
-            editor.gotoLine(row + 1, column - 1);
             return;
         }
 
-        this.worker.postMessage({
-            id: activeFile.id,
-            code,
-            cursorOptions: {
-                parser,
-                cursorOffset: this.#cursorPosTocursorOffset(cursorPos),
-                filepath: activeFile.name,
-            },
-        });
+        const { prettier, plugins } = window.acodePluginPrettier;
+        cursorOptions.plugins = plugins;
+        const res = prettier.formatWithCursor(code, cursorOptions);
+        editor.setValue(res.formatted);
+        const { row, column } = this.#cursorOffsetTocursorPos(res.cursorOffset);
+        editor.gotoLine(row + 1, column - 1);
     }
 
     destroy() {
@@ -186,9 +182,7 @@ class AcodePrettier {
 
                 const { session } = file;
                 session.setValue(res.formatted);
-                const { row, column } = this.#cursorOffsetTocursorPos(
-                    res.cursorOffset
-                );
+                const { row, column } = this.#cursorOffsetTocursorPos(res.cursorOffset);
 
                 session.selection.moveCursorTo(row, column);
             }
@@ -203,16 +197,13 @@ class AcodePrettier {
 
 if (window.acode) {
     const prettier = new AcodePrettier();
-    acode.setPluginInit(
-        pluginId,
-        (baseUrl, $page, { cacheFileUrl, cacheFile }) => {
-            if (!baseUrl.endsWith("/")) {
-                baseUrl += "/";
-            }
-            prettier.baseUrl = baseUrl;
-            prettier.init($page, cacheFile, cacheFileUrl);
+    acode.setPluginInit(pluginId, (baseUrl, $page, { cacheFileUrl, cacheFile }) => {
+        if (!baseUrl.endsWith("/")) {
+            baseUrl += "/";
         }
-    );
+        prettier.baseUrl = baseUrl;
+        prettier.init($page, cacheFile, cacheFileUrl);
+    });
     acode.setPluginUnmount(pluginId, () => {
         prettier.destroy();
     });
