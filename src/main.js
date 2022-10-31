@@ -79,7 +79,6 @@ class AcodePrettier {
             await this.loadScript();
         }
 
-        const config = appSettings.value[pluginId];
         const extensions = [
             "html",
             "htm",
@@ -107,6 +106,7 @@ class AcodePrettier {
 
     async run() {
         const { editor, activeFile } = editorManager;
+        const { session } = activeFile;
         const code = editor.getValue();
         const cursorPos = editor.getCursorPosition();
         const parser = AcodePrettier.inferParser(activeFile.name);
@@ -129,9 +129,7 @@ class AcodePrettier {
         const { prettier, plugins } = window.acodePluginPrettier;
         cursorOptions.plugins = plugins;
         const res = prettier.formatWithCursor(code, cursorOptions);
-        editor.setValue(res.formatted);
-        const { row, column } = this.#cursorOffsetTocursorPos(res.cursorOffset);
-        editor.gotoLine(row + 1, column - 1);
+        this.#setValue(session, res);
     }
 
     destroy() {
@@ -181,10 +179,7 @@ class AcodePrettier {
                 if (!file) return;
 
                 const { session } = file;
-                session.setValue(res.formatted);
-                const { row, column } = this.#cursorOffsetTocursorPos(res.cursorOffset);
-
-                session.selection.moveCursorTo(row, column);
+                this.#setValue(session, res);
             }
         };
 
@@ -192,6 +187,18 @@ class AcodePrettier {
             action: "load script",
             scriptUrl: acode.joinUrl(this.baseUrl, "vendor.js"),
         });
+    }
+
+    #setValue(session, formattedCode) {
+        const { $undoStack, $redoStack, $rev, $mark } = Object.assign({}, session.getUndoManager());
+        session.setValue(formattedCode.formatted);
+        const undoManager = session.getUndoManager();
+        undoManager.$undoStack = $undoStack;
+        undoManager.$redoStack = $redoStack;
+        undoManager.$rev = $rev;
+        undoManager.$mark = $mark;
+        const { row, column } = this.#cursorOffsetTocursorPos(formattedCode.cursorOffset);
+        session.selection.moveCursorTo(row, column);
     }
 }
 
