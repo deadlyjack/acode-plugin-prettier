@@ -14,11 +14,13 @@
     "@babel/core": "^7.19.6",
     "@babel/preset-env": "^7.19.4",
     "babel-loader": "^9.0.0",
+    "jszip": "^3.10.1",
     "webpack": "^5.74.0",
     "webpack-cli": "^4.10.0"
   },
   "scripts": {
-    "build": "node ./scripts/build.js"
+    "build": "node ./scripts/build.js",
+    "build-release": "yarn build --mode production"
   },
   "resolutions": {
     "terser": ">=5.15.1"

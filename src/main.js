@@ -1,6 +1,7 @@
 import plugin from "../plugin.json";
 
 const pluginId = plugin.id;
+const appSettings = acode.require('settings');
 
 class AcodePrettier {
     worker = null;
