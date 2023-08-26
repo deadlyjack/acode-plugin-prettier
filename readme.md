@@ -4,26 +4,27 @@ Prettier is an opinionated code formatter. It enforces a consistent style by par
 
 This plugin can format code written in [Acode](https://acode.foxdebug.com) editor for Android.
 
-## Supported Extenstions
- - html
- - htm
- - css
- - scss
- - less
- - js
- - cjs
- - es
- - mjs
- - jsx
- - ts
- - tsx
- - vue
- - json
- - hbs
- - handlebars
- - md
- - yaml
- - yml
+## Supported Extensions
+
+- html
+- htm
+- css
+- scss
+- less
+- js
+- cjs
+- es
+- mjs
+- jsx
+- ts
+- tsx
+- vue
+- json
+- hbs
+- handlebars
+- md
+- yaml
+- yml
 
 ## Under Development
 

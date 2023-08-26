@@ -4,5 +4,12 @@
     "cert": "D:/Github/deadlyjack/acode-plugin-prettier/.vscode/server.crt",
     "key": "D:/Github/deadlyjack/acode-plugin-prettier/.vscode/server.key",
     "passphrase": "1234"
-  }
+  },
+  "cSpell.words": [
+    "acode",
+    "Aspree",
+    "deadlyjack",
+    "espree",
+    "Meriyah"
+  ]
 }
