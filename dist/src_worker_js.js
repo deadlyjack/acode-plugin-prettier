@@ -15,7 +15,7 @@
   \***********************/
 /***/ (function() {
 
-eval("self.onmessage = e => {\n  const {\n    id,\n    code,\n    cursorOptions,\n    action,\n    scriptUrl\n  } = e.data;\n  if (action === \"load script\") {\n    importScripts(scriptUrl);\n    self.postMessage({\n      action: \"script loaded\"\n    });\n    return;\n  }\n  const {\n    prettier,\n    plugins\n  } = self.acodePluginPrettier;\n  cursorOptions.plugins = plugins;\n  const res = prettier.formatWithCursor(code, cursorOptions);\n  self.postMessage({\n    id,\n    action: \"code format\",\n    res\n  });\n};\n\n//# sourceURL=webpack://acode-plugin-prettier/./src/worker.js?");
+eval("self.onmessage = async e => {\n  const {\n    id,\n    code,\n    cursorOptions,\n    action,\n    scriptUrl\n  } = e.data;\n  if (action === \"load script\") {\n    importScripts(scriptUrl);\n    self.postMessage({\n      action: \"script loaded\"\n    });\n    return;\n  }\n  const {\n    prettier,\n    plugins\n  } = self.acodePluginPrettier;\n  cursorOptions.plugins = plugins;\n  const res = await prettier.formatWithCursor(code, cursorOptions);\n  self.postMessage({\n    id,\n    action: \"code format\",\n    res\n  });\n};\n\n//# sourceURL=webpack://acode-plugin-prettier/./src/worker.js?");
 
 /***/ })
 

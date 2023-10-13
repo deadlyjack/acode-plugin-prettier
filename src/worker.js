@@ -1,4 +1,4 @@
-self.onmessage = (e) => {
+self.onmessage = async (e) => {
     const { id, code, cursorOptions, action, scriptUrl } = e.data;
     if (action === "load script") {
         importScripts(scriptUrl);
@@ -8,6 +8,6 @@ self.onmessage = (e) => {
 
     const { prettier, plugins } = self.acodePluginPrettier;
     cursorOptions.plugins = plugins;
-    const res = prettier.formatWithCursor(code, cursorOptions);
+    const res = await prettier.formatWithCursor(code, cursorOptions);
     self.postMessage({ id, action: "code format", res });
 };

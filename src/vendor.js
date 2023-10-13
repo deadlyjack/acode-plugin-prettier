@@ -1,16 +1,17 @@
 import prettier from "prettier/standalone";
-import prettierParserHTML from "prettier/parser-html/";
-import prettierParserBabel from "prettier/parser-babel";
-import prettierParserGraphql from "prettier/parser-graphql";
-import prettierParserAngular from "prettier/parser-angular";
-import prettierParserEspree from "prettier/parser-espree";
-import prettierParserFlow from "prettier/parser-flow";
-import prettierParserGlimmer from "prettier/parser-glimmer";
-import prettierParserMd from "prettier/parser-markdown";
-import prettierParserMeriyah from "prettier/parser-meriyah";
-import prettierParserPostcss from "prettier/parser-postcss";
-import prettierParserTypescript from "prettier/parser-typescript";
-import prettierParserYaml from "prettier/parser-yaml";
+import prettierParserHTML from "prettier/plugins/html";
+import prettierParserBabel from "prettier/plugins/babel";
+import prettierParserGraphql from "prettier/plugins/graphql";
+import prettierParserAngular from "prettier/plugins/angular";
+import prettierParserEstree from "prettier/plugins/estree";
+import prettierParserFlow from "prettier/plugins/flow";
+import prettierParserGlimmer from "prettier/plugins/glimmer";
+import prettierParserMd from "prettier/plugins/markdown";
+import prettierParserMeriyah from "prettier/plugins/meriyah";
+import prettierParserPostcss from "prettier/plugins/postcss";
+import prettierParserTypescript from "prettier/plugins/typescript";
+import prettierParserYaml from "prettier/plugins/yaml";
+import prettierPluginAcorn from 'prettier/plugins/acorn'
 
 self.acodePluginPrettier = {
     prettier,
@@ -18,7 +19,7 @@ self.acodePluginPrettier = {
         prettierParserBabel,
         prettierParserGraphql,
         prettierParserAngular,
-        prettierParserEspree,
+        prettierParserEstree,
         prettierParserFlow,
         prettierParserGlimmer,
         prettierParserHTML,
@@ -27,5 +28,6 @@ self.acodePluginPrettier = {
         prettierParserPostcss,
         prettierParserTypescript,
         prettierParserYaml,
+        prettierPluginAcorn,
     ],
 };
