@@ -1,6 +1,7 @@
 import plugin from "../plugin.json";
 import yaml from "js-yaml";
 import toml from "toml";
+import tag from 'html-tag-js';
 import prettier from "prettier/standalone";
 import prettierPlugins from './prettierPlugins';
 
@@ -8,6 +9,10 @@ const pluginId = plugin.id;
 const appSettings = acode.require('settings');
 const fs = acode.require('fs');
 const url = acode.require('url');
+const SideButton = acode.require('sideButton');
+const helpers = acode.require('helpers');
+const toast = acode.require('toast');
+const actionStack = acode.require('actionStack');
 
 class AcodePrettier {
     /**@type {Worker} */
@@ -15,8 +20,10 @@ class AcodePrettier {
     workerInitialized = false;
     /**@type {HTMLScriptElement} */
     $vendorScript = null;
+    #sideButton;
+    /**@type {HTMLElement} */
+    #page;
 
-    prettierEmbeddedLanguageFormatting = ["auto", "off"];
     prettierOptions = {
         printWidth: 80,
         tabWidth: 4,
@@ -39,14 +46,26 @@ class AcodePrettier {
         endOfLine: "lf",
         embeddedLanguageFormatting: "auto",
         singleAttributePerLine: false,
+        openErrorPageOnErrors: true,
+        version: 3,
     };
 
     constructor() {
         this.run = this.run.bind(this);
         this.onSettingsChange = this.onSettingsChange.bind(this);
+        this.#sideButton = SideButton?.({
+            text: plugin.name,
+            icon: "warningreport_problem",
+            backgroundColor: "var(--danger-color)",
+            textColor: "var(--danger-text-color)",
+            onclick: () => {
+                this.#page.show();
+                helpers.showAd();
+            }
+        });
 
         const prettierSettings = appSettings.value[plugin.id];
-        if (!prettierSettings) {
+        if (!prettierSettings || prettierSettings?.version !== this.prettierOptions.version) {
             appSettings.value[plugin.id] = structuredClone(this.prettierOptions);
             appSettings.update();
         } else {
@@ -56,19 +75,11 @@ class AcodePrettier {
     }
 
     static inferParser(filename) {
-        switch (filename.slice(filename.lastIndexOf(".") + 1)) {
+        const ext = filename.slice(filename.lastIndexOf(".") + 1);
+        switch (ext) {
             case "html":
             case "htm":
                 return "html";
-
-            case "css":
-                return "css";
-
-            case "scss":
-                return "scss";
-
-            case "less":
-                return "less";
 
             case "js":
             case "cjs":
@@ -80,12 +91,6 @@ class AcodePrettier {
             case "ts":
             case "tsx":
                 return "typescript";
-
-            case "vue":
-                return "vue";
-
-            case "json":
-                return "json";
 
             case "hbs":
             case "handlebars":
@@ -99,11 +104,23 @@ class AcodePrettier {
                 return "yaml";
 
             default:
-                return null;
+                return ext;
         }
     }
 
-    async init() {
+    async init($page) {
+        this.#page = $page;
+        this.#page.settitle(`${plugin.name} logs`);
+
+        this.#page.onhide = () => {
+            helpers.hideAd();
+            actionStack.remove(plugin.id);
+        };
+
+        this.commands.forEach(command => {
+            editorManager.editor.commands.addCommand(command);
+        });
+
         if (typeof Worker !== "undefined") {
             this.#initializeWorker();
         }
@@ -135,12 +152,10 @@ class AcodePrettier {
 
     async run() {
         const { editor, activeFile } = editorManager;
-        const { session } = activeFile;
         const code = editor.getValue();
         const cursorPos = editor.getCursorPosition();
         const parser = AcodePrettier.inferParser(activeFile.name);
         const configFile = await this.#getConfigFile(activeFile);
-        console.log({ configFile });
         const prettierOptions = configFile || this.prettierOptions;
         const cursorOptions = {
             parser,
@@ -159,11 +174,17 @@ class AcodePrettier {
         }
 
         cursorOptions.plugins = prettierPlugins;
-        const res = await prettier.formatWithCursor(code, cursorOptions);
-        this.#setValue(session, res);
+        try {
+            const res = await prettier.formatWithCursor(code, cursorOptions);
+            this.#setValue(activeFile, res);
+        } catch (error) {
+            this.#showError(activeFile.id, error);
+        }
     }
 
     destroy() {
+        this.#sideButton?.hide();
+        this.#page?.hide();
         acode.unregisterFormatter(plugin.id);
         if (this.worker) {
             this.worker.terminate();
@@ -171,14 +192,21 @@ class AcodePrettier {
         if (this.$vendorScript) {
             this.$vendorScript.remove();
         }
+
+        this.commands.forEach(command => {
+            editorManager.editor.commands.removeCommand(command);
+        });
     }
 
     #cursorPosToCursorOffset(cursorPos) {
         let { row, column } = cursorPos;
         const { editor } = editorManager;
         const lines = editor.getValue().split("\n");
-        for (let i = 0; i < row - 1; i++) {
-            column += lines[i].length;
+
+        for (let i = 0; i < row; ++i) {
+            if (i < row) {
+                column += lines[i].length + 1; // +1 for newline character
+            }
         }
         return column;
     }
@@ -186,16 +214,19 @@ class AcodePrettier {
     #cursorOffsetToCursorPos(cursorOffset) {
         const { editor } = editorManager;
         const lines = editor.getValue().split("\n");
+        const linesCount = lines.length;
         let row = 0;
         let column = 0;
-        for (let i = 0; i < lines.length; i++) {
-            if (column + lines[i].length >= cursorOffset) {
+
+        for (let i = 0; i < linesCount; i++) {
+            if (column + lines[i].length + (i !== linesCount - 1 ? 1 : 0) > cursorOffset) { // +1 for newline, but not for the last line
                 row = i;
                 column = cursorOffset - column;
                 break;
             }
-            column += lines[i].length;
+            column += lines[i].length + 1; // +1 for newline character
         }
+
         return {
             row,
             column,
@@ -205,23 +236,28 @@ class AcodePrettier {
     #initializeWorker() {
         this.worker = new Worker(new URL("./worker.js", import.meta.url));
         this.worker.onmessage = (e) => {
-            const { id, res, action } = e.data;
+            const { id, res, error, action } = e.data;
             if (action === "script loaded") {
                 this.workerInitialized = true;
                 return;
             }
 
             if (action === "code format") {
+                if (error) {
+                    this.#showError(id, error);
+                    return;
+                }
+
                 const file = editorManager.getFile(id, "id");
                 if (!file) return;
 
-                const { session } = file;
-                this.#setValue(session, res);
+                this.#setValue(file, res);
             }
         };
     }
 
-    #setValue(session, formattedCode) {
+    #setValue(file, formattedCode) {
+        const { session } = file;
         const { $undoStack, $redoStack, $rev, $mark } = Object.assign({}, session.getUndoManager());
         session.setValue(formattedCode.formatted);
         const undoManager = session.getUndoManager();
@@ -229,8 +265,68 @@ class AcodePrettier {
         undoManager.$redoStack = $redoStack;
         undoManager.$rev = $rev;
         undoManager.$mark = $mark;
-        const { row, column } = this.#cursorOffsetToCursorPos(formattedCode.cursorOffset);
-        session.selection.moveCursorTo(row, column);
+        session.selection.moveCursorToPosition(this.#cursorOffsetToCursorPos(formattedCode.cursorOffset));
+        this.#removeErrors(file.id);
+    }
+
+    /**
+     * Creates and append error to #page
+     * @param {string} fileId 
+     * @param {Error} error 
+     */
+    #showError(fileId, error) {
+        const message = error.message;
+        const now = new Date();
+        const localDateTime = now.toLocaleDateString() + " " + now.toLocaleTimeString();
+        const [line, column] = message.match(/\d+:\d+/)?.[0]?.split(':') || [];
+        const file = editorManager.getFile(fileId, 'id');
+        const $error = tag('div', {
+            dataset: {
+                file: fileId,
+                type: 'error',
+            },
+            onclick: () => {
+                if (!line || !column) return
+                file.session.selection.moveCursorToPosition({
+                    row: +line - 1,
+                    column: +column - 1
+                });
+                this.#page.hide();
+            },
+            style: {
+                borderBottom: '1px solid var(--border-color)',
+                padding: '5px',
+                marginBottom: '5px',
+            },
+            innerHTML: `<code style="overflow: auto; color: var(--danger-color)"><pre>${error.message}</pre></code>
+<div style="display: flex; justify-content: space-between; align-items: center;">
+    <span>${file.name} (${line}:${column})</span><span>${localDateTime}</span>
+</div>`,
+        });
+        this.#sideButton?.show();
+        this.#page.append($error);
+
+        if (this.#page.childElementCount > 10) {
+            this.#page.firstChild.remove();
+        }
+
+        if (this.prettierOptions.openErrorPageOnErrors) {
+            this.#page.show();
+        } else {
+            toast(
+                this.#sideButton && appSettings.value.showSideButtons
+                    ? "Error occurred while formatting code. Click on the side button to view logs."
+                    : "Error occurred while formatting code. Search for 'prettier logs' in the command palette to view logs."
+            );
+        }
+    }
+
+    #removeErrors(fileId) {
+        const $errors = this.#page.getAll(`[data-file="${fileId}"]`);
+        $errors.forEach($error => $error.remove());
+        if (!this.#page.get('[data-type=error')) {
+            this.#sideButton?.hide();
+        }
     }
 
     async #getConfigFile(activeFile) {
@@ -310,8 +406,24 @@ class AcodePrettier {
         }
     }
 
+    get commands() {
+        return [
+            {
+                name: "Prettier Logs",
+                description: "View logs of prettier errors.",
+                exec: () => this.#page.show(),
+            },
+        ]
+    }
+
     get settings() {
         return [
+            {
+                key: "openErrorPageOnErrors",
+                text: "Open logs page on error",
+                info: "Open logs page when an error occurs.",
+                checkbox: this.prettierOptions.openErrorPageOnErrors,
+            },
             {
                 key: "printWidth",
                 text: "Print Width",

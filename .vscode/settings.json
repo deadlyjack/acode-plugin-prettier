@@ -12,6 +12,9 @@
     "espree",
     "estree",
     "Meriyah",
+    "onhide",
+    "settitle",
+    "warningreport",
     "whitespaces"
   ]
 }

@@ -11,6 +11,10 @@ self.onmessage = async (e) => {
     }
 
     cursorOptions.plugins = prettierPlugins;
-    const res = await prettier.formatWithCursor(code, cursorOptions);
-    self.postMessage({ id, action: "code format", res });
+    try {
+        const res = await prettier.formatWithCursor(code, cursorOptions);
+        self.postMessage({ id, action: "code format", res });
+    } catch (error) {
+        self.postMessage({ id, action: "code format", error });
+    }
 };

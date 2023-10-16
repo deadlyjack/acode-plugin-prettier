@@ -1,1 +1,0 @@
-self.onmessage=async s=>{const{id:t,code:o,cursorOptions:e,action:i,scriptUrl:r}=s.data;if("load script"===i)return importScripts(r),void self.postMessage({action:"script loaded"});const{prettier:a,plugins:c}=self.acodePluginPrettier;e.plugins=c;const n=await a.formatWithCursor(o,e);self.postMessage({id:t,action:"code format",res:n})};

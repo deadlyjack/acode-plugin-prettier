@@ -8,6 +8,7 @@
   "license": "MIT",
   "dependencies": {
     "@types/js-yaml": "^4.0.7",
+    "html-tag-js": "^1.1.41",
     "js-yaml": "^4.1.0",
     "live-server": "^1.2.2",
     "prettier": "^3.0.2",
@@ -27,7 +28,5 @@
     "build-release": "webpack --mode production",
     "start-dev": "node .vscode/start-dev"
   },
-  "browserslist": [
-    "> 0.25%, not dead"
-  ]
+  "browserslist": "cover 100%,not android < 5"
 }
