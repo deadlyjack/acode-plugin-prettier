@@ -1,6 +1,8 @@
 import plugin from "../plugin.json";
 import yaml from "js-yaml";
 import toml from "toml";
+import prettier from "prettier/standalone";
+import prettierPlugins from './prettierPlugins';
 
 const pluginId = plugin.id;
 const appSettings = acode.require('settings');
@@ -51,21 +53,6 @@ class AcodePrettier {
             Object.assign(this.prettierOptions, prettierSettings);
             this.prettierOptions.rangeEnd = prettierSettings.rangeEnd ?? Infinity;
         }
-    }
-
-    async loadScript() {
-        if (document.getElementById("prettier-vendor-script")) {
-            return;
-        }
-
-        const $script = document.createElement("script");
-        this.$vendorScript = $script;
-        $script.id = "prettier-vendor-script";
-        $script.src = acode.joinUrl(this.baseUrl, "vendor.js");
-        return new Promise((resolve, reject) => {
-            $script.onload = resolve;
-            $script.onerror = reject;
-        });
     }
 
     static inferParser(filename) {
@@ -119,8 +106,6 @@ class AcodePrettier {
     async init() {
         if (typeof Worker !== "undefined") {
             this.#initializeWorker();
-        } else {
-            await this.loadScript();
         }
 
         const extensions = [
@@ -173,8 +158,7 @@ class AcodePrettier {
             return;
         }
 
-        const { prettier, plugins } = window.acodePluginPrettier;
-        cursorOptions.plugins = plugins;
+        cursorOptions.plugins = prettierPlugins;
         const res = await prettier.formatWithCursor(code, cursorOptions);
         this.#setValue(session, res);
     }
@@ -235,11 +219,6 @@ class AcodePrettier {
                 this.#setValue(session, res);
             }
         };
-
-        this.worker.postMessage({
-            action: "load script",
-            scriptUrl: acode.joinUrl(this.baseUrl, "vendor.js"),
-        });
     }
 
     #setValue(session, formattedCode) {
@@ -277,7 +256,7 @@ class AcodePrettier {
             ".prettierrc.yml",
             ".prettierrc.toml",
             ".prettierrc.js",
-            "prettier.config.js",
+            ".prettier.config.js",
             ".prettierrc.mjs",
             ".prettierrc.config.mjs",
             ".prettierrc.cjs",

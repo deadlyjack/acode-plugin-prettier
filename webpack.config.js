@@ -19,7 +19,6 @@ module.exports = (env, options) => {
         mode,
         entry: {
             main: "./src/main.js",
-            vendor: "./src/vendor.js",
         },
         output: {
             path: path.resolve(__dirname, "dist"),
