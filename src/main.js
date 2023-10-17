@@ -53,6 +53,7 @@ class AcodePrettier {
     constructor() {
         this.run = this.run.bind(this);
         this.onSettingsChange = this.onSettingsChange.bind(this);
+        this.removeErrorsByFile = this.removeErrorsByFile.bind(this);
         this.#sideButton = SideButton?.({
             text: plugin.name,
             icon: "warningreport_problem",
@@ -148,6 +149,7 @@ class AcodePrettier {
         ];
 
         acode.registerFormatter(pluginId, extensions, this.run);
+        editorManager.on('remove-file', this.removeErrorsByFile);
     }
 
     async run() {
@@ -196,6 +198,7 @@ class AcodePrettier {
         this.commands.forEach(command => {
             editorManager.editor.commands.removeCommand(command);
         });
+        editorManager.off('remove-file', this.removeErrorsByFile);
     }
 
     #cursorPosToCursorOffset(cursorPos) {
@@ -319,6 +322,10 @@ class AcodePrettier {
                     : "Error occurred while formatting code. Search for 'prettier logs' in the command palette to view logs."
             );
         }
+    }
+
+    removeErrorsByFile(file) {
+        this.#removeErrors(file.id);
     }
 
     #removeErrors(fileId) {
